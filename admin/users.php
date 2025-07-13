@@ -202,6 +202,7 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 <body>
     <?php include('components/navigation.php'); ?>
     <?php include('components/sidebar.php'); ?>
+    <?php include('components/notifications.php'); ?>
 
     <!-- Main Content -->
     <div class="main-content">
@@ -266,7 +267,13 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                         </td>
                         <td><?php echo date('M j, Y', strtotime($user['created_at'] ?? 'now')); ?></td>
                         <td>
-                            <button class="btn btn-action btn-edit" title="Edit User">
+                            <button class="btn btn-action btn-edit" title="Edit User"
+                                data-userid="<?php echo htmlspecialchars($user['userID']); ?>"
+                                data-username="<?php echo htmlspecialchars($user['username']); ?>"
+                                data-email="<?php echo htmlspecialchars($user['email']); ?>"
+                                data-fname="<?php echo htmlspecialchars($user['fname']); ?>"
+                                data-lname="<?php echo htmlspecialchars($user['lname']); ?>"
+                                data-role="<?php echo htmlspecialchars($user['role']); ?>">
                                 <i class="fas fa-edit"></i>
                             </button>
                             <button class="btn btn-action btn-delete" title="Delete User">
@@ -278,6 +285,123 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 </tbody>
             </table>
         </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div class="modal fade" id="addUserModal" tabindex="-1" aria-labelledby="addUserModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+          <form id="addUserForm">
+            <div class="modal-header">
+              <h5 class="modal-title" id="addUserModalLabel">Add User</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="add_username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="add_username" name="username" required>
+              </div>
+              <div class="mb-3">
+                <label for="add_email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="add_email" name="email" required>
+              </div>
+              <div class="mb-3">
+                <label for="add_fname" class="form-label">First Name</label>
+                <input type="text" class="form-control" id="add_fname" name="fname">
+              </div>
+              <div class="mb-3">
+                <label for="add_lname" class="form-label">Last Name</label>
+                <input type="text" class="form-control" id="add_lname" name="lname">
+              </div>
+              <div class="mb-3">
+                <label for="add_role" class="form-label">Role</label>
+                <select class="form-select" id="add_role" name="role" required>
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="add_password" class="form-label">Password</label>
+                <input type="password" class="form-control" id="add_password" name="password" required>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Add User</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1" aria-labelledby="editUserModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+          <form id="editUserForm">
+            <input type="hidden" id="edit_userID" name="userID">
+            <div class="modal-header">
+              <h5 class="modal-title" id="editUserModalLabel">Edit User</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="edit_username" class="form-label">Username</label>
+                <input type="text" class="form-control" id="edit_username" name="username" required>
+              </div>
+              <div class="mb-3">
+                <label for="edit_email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="edit_email" name="email" required>
+              </div>
+              <div class="mb-3">
+                <label for="edit_fname" class="form-label">First Name</label>
+                <input type="text" class="form-control" id="edit_fname" name="fname">
+              </div>
+              <div class="mb-3">
+                <label for="edit_lname" class="form-label">Last Name</label>
+                <input type="text" class="form-control" id="edit_lname" name="lname">
+              </div>
+              <div class="mb-3">
+                <label for="edit_role" class="form-label">Role</label>
+                <select class="form-select" id="edit_role" name="role" required>
+                  <option value="user">User</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="edit_password" class="form-label">Password (leave blank to keep current)</label>
+                <input type="password" class="form-control" id="edit_password" name="password">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete User Modal -->
+    <div class="modal fade" id="deleteUserModal" tabindex="-1" aria-labelledby="deleteUserModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+          <form id="deleteUserForm">
+            <input type="hidden" id="delete_userID" name="userID">
+            <div class="modal-header">
+              <h5 class="modal-title" id="deleteUserModalLabel">Delete User</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p>Are you sure you want to delete <span id="delete_username" class="fw-bold"></span>?</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-danger">Delete</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
 
     <!-- Bootstrap JS -->
@@ -295,5 +419,118 @@ $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
             });
         });
     </script>
+
+    <script>
+document.querySelectorAll('.btn-add').forEach(btn => {
+  btn.addEventListener('click', () => {
+    new bootstrap.Modal(document.getElementById('addUserModal')).show();
+  });
+});
+document.querySelectorAll('.btn-edit').forEach((btn, i) => {
+  btn.addEventListener('click', function() {
+    document.getElementById('edit_userID').value = this.getAttribute('data-userid');
+    document.getElementById('edit_username').value = this.getAttribute('data-username');
+    document.getElementById('edit_email').value = this.getAttribute('data-email');
+    document.getElementById('edit_fname').value = this.getAttribute('data-fname');
+    document.getElementById('edit_lname').value = this.getAttribute('data-lname');
+    document.getElementById('edit_role').value = this.getAttribute('data-role');
+    document.getElementById('edit_password').value = '';
+    new bootstrap.Modal(document.getElementById('editUserModal')).show();
+  });
+});
+document.querySelectorAll('.btn-delete').forEach((btn, i) => {
+  btn.addEventListener('click', function() {
+    const row = this.closest('tr');
+    document.getElementById('delete_userID').value = row.children[0].textContent.replace('#','').trim();
+    document.getElementById('delete_username').textContent = row.children[1].textContent.trim();
+    new bootstrap.Modal(document.getElementById('deleteUserModal')).show();
+  });
+});
+
+// AJAX for Add User
+const addUserForm = document.getElementById('addUserForm');
+if (addUserForm) {
+  addUserForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    formData.append('action', 'add');
+    fetch('includes/process_users.php', {
+      method: 'POST',
+      body: formData,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
+        if (modal) modal.hide();
+        setTimeout(() => {
+          showSuccess(data.message);
+          setTimeout(() => location.reload(), 1500);
+        }, 400);
+      } else {
+        showError(data.message);
+      }
+    })
+    .catch(() => showError('An error occurred while adding the user.'));
+  });
+}
+// AJAX for Edit User
+const editUserForm = document.getElementById('editUserForm');
+if (editUserForm) {
+  editUserForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    formData.append('action', 'edit');
+    fetch('includes/process_users.php', {
+      method: 'POST',
+      body: formData,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
+        if (modal) modal.hide();
+        setTimeout(() => {
+          showSuccess(data.message);
+          setTimeout(() => location.reload(), 1500);
+        }, 400);
+      } else {
+        showError(data.message);
+      }
+    })
+    .catch(() => showError('An error occurred while updating the user.'));
+  });
+}
+// AJAX for Delete User
+const deleteUserForm = document.getElementById('deleteUserForm');
+if (deleteUserForm) {
+  deleteUserForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    formData.append('action', 'delete');
+    fetch('includes/process_users.php', {
+      method: 'POST',
+      body: formData,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('deleteUserModal'));
+        if (modal) modal.hide();
+        setTimeout(() => {
+          showSuccess(data.message);
+          setTimeout(() => location.reload(), 1500);
+        }, 400);
+      } else {
+        showError(data.message);
+      }
+    })
+    .catch(() => showError('An error occurred while deleting the user.'));
+  });
+}
+</script>
 </body>
 </html> 

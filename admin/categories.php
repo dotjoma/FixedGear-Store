@@ -12,49 +12,10 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 // Include database connection
 require_once '../includes/connect.php';
 
-// Sample categories data (replace with database query)
-$categories = [
-    [
-        'id' => 1,
-        'name' => 'Fixed Gear',
-        'description' => 'Complete fixed gear bicycles',
-        'product_count' => 12,
-        'status' => 'active',
-        'created_at' => '2024-01-15'
-    ],
-    [
-        'id' => 2,
-        'name' => 'Frames',
-        'description' => 'Bicycle frames and framesets',
-        'product_count' => 8,
-        'status' => 'active',
-        'created_at' => '2024-01-10'
-    ],
-    [
-        'id' => 3,
-        'name' => 'Components',
-        'description' => 'Bicycle components and parts',
-        'product_count' => 25,
-        'status' => 'active',
-        'created_at' => '2024-01-05'
-    ],
-    [
-        'id' => 4,
-        'name' => 'Accessories',
-        'description' => 'Bicycle accessories and gear',
-        'product_count' => 18,
-        'status' => 'active',
-        'created_at' => '2024-01-01'
-    ],
-    [
-        'id' => 5,
-        'name' => 'Apparel',
-        'description' => 'Cycling clothing and apparel',
-        'product_count' => 0,
-        'status' => 'inactive',
-        'created_at' => '2024-01-20'
-    ]
-];
+// Get categories from database
+$stmt = $conn->prepare("SELECT categoryID, name, status, created_at FROM categories ORDER BY created_at DESC");
+$stmt->execute();
+$categories = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -128,37 +89,42 @@ $categories = [
             outline: none;
         }
         
-        .categories-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 1.5rem;
-        }
-        
-        .category-card {
+        .categories-table {
             background: #181a20;
             border: 1px solid #333;
             border-radius: 12px;
-            padding: 1.5rem;
-            transition: transform 0.3s, border-color 0.3s;
+            overflow: hidden;
         }
         
-        .category-card:hover {
-            transform: translateY(-5px);
-            border-color: #e6ff00;
+        .table {
+            margin: 0;
+            color: #fff;
         }
         
-        .category-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1rem;
+        .table th {
+            background: #14161b;
+            color: #e6ff00;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: none;
+            padding: 1rem;
+        }
+        
+        .table td {
+            border: none;
+            border-bottom: 1px solid #333;
+            padding: 1rem;
+            vertical-align: middle;
+        }
+        
+        .table tbody tr:hover {
+            background: #14161b;
         }
         
         .category-name {
-            font-size: 1.3rem;
             font-weight: bold;
             color: #e6ff00;
-            margin: 0;
         }
         
         .category-status {
@@ -179,49 +145,13 @@ $categories = [
             color: #fff;
         }
         
-        .category-description {
-            color: #bdbdbd;
-            margin-bottom: 1rem;
-            line-height: 1.5;
-        }
-        
-        .category-stats {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-        
-        .stat-item {
-            text-align: center;
-        }
-        
-        .stat-number {
-            font-size: 1.2rem;
-            font-weight: 900;
-            color: #e6ff00;
-            display: block;
-        }
-        
-        .stat-label {
-            color: #bdbdbd;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-        
-        .category-actions {
-            display: flex;
-            gap: 0.5rem;
-        }
-        
         .btn-action {
-            padding: 0.5rem 1rem;
+            padding: 0.25rem 0.5rem;
+            margin: 0 0.25rem;
             border: none;
             border-radius: 4px;
-            font-size: 0.9rem;
+            font-size: 0.8rem;
             transition: background 0.3s;
-            flex: 1;
         }
         
         .btn-edit {
@@ -282,17 +212,68 @@ $categories = [
             text-transform: uppercase;
             letter-spacing: 1px;
         }
+        
+        /* Modal Styles */
+        .modal-content {
+            background: #181a20;
+            border: 1px solid #333;
+            color: #fff;
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid #333;
+        }
+        
+        .modal-title {
+            color: #e6ff00;
+            font-weight: bold;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .form-control {
+            background: #14161b;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 8px;
+        }
+        
+        .form-control:focus {
+            background: #181a20;
+            border-color: #e6ff00;
+            box-shadow: 0 0 0 2px #e6ff0033;
+            color: #fff;
+        }
+        
+        .form-label {
+            color: #e6ff00;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-close {
+            filter: invert(1);
+        }
+        
+        .alert {
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body>
     <?php include('components/navigation.php'); ?>
     <?php include('components/sidebar.php'); ?>
+    <?php include('components/notifications.php'); ?>
 
     <!-- Main Content -->
     <div class="main-content">
         <div class="page-header">
             <h1 class="page-title">CATEGORIES MANAGEMENT</h1>
-            <button class="btn btn-add">
+            <button class="btn btn-add" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
                 <i class="fas fa-plus me-2"></i>Add Category
             </button>
         </div>
@@ -308,12 +289,8 @@ $categories = [
                 <div class="stat-label">Active Categories</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number"><?php echo array_sum(array_column($categories, 'product_count')); ?></div>
-                <div class="stat-label">Total Products</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number"><?php echo count(array_filter($categories, function($c) { return $c['product_count'] > 0; })); ?></div>
-                <div class="stat-label">Categories with Products</div>
+                <div class="stat-number"><?php echo count(array_filter($categories, function($c) { return $c['status'] === 'inactive'; })); ?></div>
+                <div class="stat-label">Inactive Categories</div>
             </div>
         </div>
 
@@ -322,43 +299,107 @@ $categories = [
             <input type="text" class="form-control search-box" placeholder="Search categories..." id="searchCategories">
         </div>
 
-        <!-- Categories Grid -->
-        <div class="categories-grid">
-            <?php foreach ($categories as $category): ?>
-            <div class="category-card" data-name="<?php echo htmlspecialchars($category['name']); ?>">
-                <div class="category-header">
-                    <h3 class="category-name"><?php echo htmlspecialchars($category['name']); ?></h3>
-                    <span class="category-status status-<?php echo $category['status']; ?>">
-                        <?php echo ucfirst($category['status']); ?>
-                    </span>
+        <!-- Categories Table -->
+        <div class="categories-table">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Category Name</th>
+                        <th>Status</th>
+                        <th>Created Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="categoriesTableBody">
+                    <?php foreach ($categories as $category): ?>
+                    <tr data-name="<?php echo htmlspecialchars($category['name']); ?>">
+                        <td><?php echo $category['categoryID']; ?></td>
+                        <td class="category-name"><?php echo htmlspecialchars($category['name']); ?></td>
+                        <td>
+                            <span class="category-status status-<?php echo $category['status']; ?>">
+                                <?php echo ucfirst($category['status']); ?>
+                            </span>
+                        </td>
+                        <td><?php echo date('M j, Y', strtotime($category['created_at'])); ?></td>
+                        <td>
+                            <button class="btn btn-action btn-edit" title="Edit Category" onclick="editCategory(<?php echo $category['categoryID']; ?>, '<?php echo htmlspecialchars($category['name']); ?>', '<?php echo $category['status']; ?>')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-action btn-toggle" title="Toggle Status" onclick="toggleStatus(<?php echo $category['categoryID']; ?>)">
+                                <i class="fas fa-toggle-on"></i>
+                            </button>
+                            <button class="btn btn-action btn-delete" title="Delete Category" onclick="deleteCategory(<?php echo $category['categoryID']; ?>, '<?php echo htmlspecialchars($category['name']); ?>')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Category Modal -->
+    <div class="modal fade" id="addCategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">ADD NEW CATEGORY</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                
-                <p class="category-description"><?php echo htmlspecialchars($category['description']); ?></p>
-                
-                <div class="category-stats">
-                    <div class="stat-item">
-                        <span class="stat-number"><?php echo $category['product_count']; ?></span>
-                        <span class="stat-label">Products</span>
-                    </div>
-                    <div class="stat-item">
-                        <span class="stat-number"><?php echo date('M j', strtotime($category['created_at'])); ?></span>
-                        <span class="stat-label">Created</span>
-                    </div>
-                </div>
-                
-                <div class="category-actions">
-                    <button class="btn btn-action btn-edit" title="Edit Category">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button class="btn btn-action btn-toggle" title="Toggle Status">
-                        <i class="fas fa-toggle-on"></i> Toggle
-                    </button>
-                    <button class="btn btn-action btn-delete" title="Delete Category">
-                        <i class="fas fa-trash"></i> Delete
-                    </button>
+                <div class="modal-body">
+                    <form id="addCategoryForm">
+                        <div class="mb-3">
+                            <label for="categoryName" class="form-label">Category Name</label>
+                            <input type="text" class="form-control" id="categoryName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryStatus" class="form-label">Status</label>
+                            <select class="form-control" id="categoryStatus" name="status">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-add flex-grow-1">Create Category</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
                 </div>
             </div>
-            <?php endforeach; ?>
+        </div>
+    </div>
+
+    <!-- Edit Category Modal -->
+    <div class="modal fade" id="editCategoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">EDIT CATEGORY</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editCategoryForm">
+                        <input type="hidden" id="editCategoryID" name="categoryID">
+                        <div class="mb-3">
+                            <label for="editCategoryName" class="form-label">Category Name</label>
+                            <input type="text" class="form-control" id="editCategoryName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="editCategoryStatus" class="form-label">Status</label>
+                            <select class="form-control" id="editCategoryStatus" name="status">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-add flex-grow-1">Update Category</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -369,16 +410,137 @@ $categories = [
         // Search functionality
         document.getElementById('searchCategories').addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
-            const categories = document.querySelectorAll('.category-card');
+            const rows = document.querySelectorAll('#categoriesTableBody tr');
             
-            categories.forEach(category => {
-                const name = category.querySelector('.category-name').textContent.toLowerCase();
-                const description = category.querySelector('.category-description').textContent.toLowerCase();
-                
-                const matchesSearch = name.includes(searchTerm) || description.includes(searchTerm);
-                category.style.display = matchesSearch ? '' : 'none';
+            rows.forEach(row => {
+                const name = row.querySelector('.category-name').textContent.toLowerCase();
+                const matchesSearch = name.includes(searchTerm);
+                row.style.display = matchesSearch ? '' : 'none';
             });
         });
+
+        // Add Category Form
+        document.getElementById('addCategoryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            formData.append('action', 'create');
+            
+            fetch('includes/process_categories.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addCategoryModal'));
+                    if (modal) modal.hide();
+                    setTimeout(() => {
+                        showSuccess(data.message);
+                        setTimeout(() => location.reload(), 1500);
+                    }, 400);
+                } else {
+                    showError(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('An error occurred while creating the category.');
+            });
+        });
+
+        // Edit Category
+        function editCategory(categoryID, name, status) {
+            document.getElementById('editCategoryID').value = categoryID;
+            document.getElementById('editCategoryName').value = name;
+            document.getElementById('editCategoryStatus').value = status;
+            
+            new bootstrap.Modal(document.getElementById('editCategoryModal')).show();
+        }
+
+        // Edit Category Form
+        document.getElementById('editCategoryForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            formData.append('action', 'update');
+            
+            fetch('includes/process_categories.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editCategoryModal'));
+                    if (modal) modal.hide();
+                    setTimeout(() => {
+                        showSuccess(data.message);
+                        setTimeout(() => location.reload(), 1500);
+                    }, 400);
+                } else {
+                    showError(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showError('An error occurred while updating the category.');
+            });
+        });
+
+        // Toggle Status
+        function toggleStatus(categoryID) {
+            if (confirm('Are you sure you want to toggle this category status?')) {
+                const formData = new FormData();
+                formData.append('action', 'toggle_status');
+                formData.append('categoryID', categoryID);
+                
+                fetch('includes/process_categories.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccess(data.message);
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showError(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showError('An error occurred while toggling the status.');
+                });
+            }
+        }
+
+        // Delete Category
+        function deleteCategory(categoryID, name) {
+            if (confirm(`Are you sure you want to delete the category "${name}"?`)) {
+                const formData = new FormData();
+                formData.append('action', 'delete');
+                formData.append('categoryID', categoryID);
+                
+                fetch('includes/process_categories.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showSuccess(data.message);
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showError(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showError('An error occurred while deleting the category.');
+                });
+            }
+        }
     </script>
 </body>
 </html> 

@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS products (
+    productID INT AUTO_INCREMENT PRIMARY KEY,
+    categoryID INT NOT NULL,
+    product_name VARCHAR(255) NOT NULL,
+    price DECIMAL(10,2) NOT NULL,
+    image LONGBLOB DEFAULT NULL,
+    status ENUM('active', 'inactive') DEFAULT 'active',
+    stock_quantity INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (categoryID) REFERENCES categories(categoryID) ON DELETE CASCADE ON UPDATE CASCADE,
+    INDEX idx_category (categoryID),
+    INDEX idx_status (status),
+    INDEX idx_created_at (created_at),
+    INDEX idx_product_name (product_name)
+);

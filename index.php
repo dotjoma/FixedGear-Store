@@ -146,7 +146,7 @@
                         We are connecting the heart and soul of the Fixed Gear universe, nurturing a space where passion for riding meets the spirit of community.
                     </div>
                     <div class="d-flex justify-content-center flex-wrap">
-                        <a href="#" class="btn hero-btn shop me-2 mb-2">SHOP NOW <i class="fas fa-arrow-right ms-2"></i></a>
+                        <a href="pages/shop.php" class="btn hero-btn shop me-2 mb-2">SHOP NOW <i class="fas fa-arrow-right ms-2"></i></a>
                         <a href="#" class="btn hero-btn featured mb-2">GET FEATURED <i class="fas fa-arrow-up-right-from-square ms-2"></i></a>
                     </div>
                 </div>

@@ -13,36 +13,13 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'admin') {
 require_once '../includes/connect.php';
 
 // Get products from database (assuming you have a products table)
-// For now, we'll create sample data
-$products = [
-    [
-        'id' => 1,
-        'name' => 'Track Bike Pro',
-        'category' => 'Fixed Gear',
-        'price' => 899.99,
-        'stock' => 15,
-        'status' => 'active',
-        'image' => '../assets/images/fgc_shop_kv.png'
-    ],
-    [
-        'id' => 2,
-        'name' => 'Urban Commuter',
-        'category' => 'Fixed Gear',
-        'price' => 649.99,
-        'stock' => 8,
-        'status' => 'active',
-        'image' => '../assets/images/fgc_shop_kv.png'
-    ],
-    [
-        'id' => 3,
-        'name' => 'Racing Frame',
-        'category' => 'Frames',
-        'price' => 299.99,
-        'stock' => 0,
-        'status' => 'out_of_stock',
-        'image' => '../assets/images/fgc_shop_kv.png'
-    ]
-];
+try {
+    $stmt = $conn->prepare("SELECT p.productID, p.product_name, p.categoryID, c.name AS category, p.price, p.stock_quantity, p.status, p.image FROM products p JOIN categories c ON p.categoryID = c.categoryID");
+    $stmt->execute();
+    $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $products = [];
+}
 
 $categories = ['Fixed Gear', 'Frames', 'Components', 'Accessories'];
 ?>
@@ -284,12 +261,22 @@ $categories = ['Fixed Gear', 'Frames', 'Components', 'Accessories'];
 <body>
     <?php include('components/navigation.php'); ?>
     <?php include('components/sidebar.php'); ?>
+    <?php include('components/notifications.php'); ?>
+    <?php
+    // Show notification if set in session
+    if (isset($_SESSION['notif_message'])) {
+        $notifType = $_SESSION['notif_type'] ?? 'success';
+        $notifMsg = addslashes($_SESSION['notif_message']);
+        echo "<script>document.addEventListener('DOMContentLoaded', function() { showNotification('{$notifMsg}', '{$notifType}', 5000); });</script>";
+        unset($_SESSION['notif_message'], $_SESSION['notif_type']);
+    }
+    ?>
 
     <!-- Main Content -->
     <div class="main-content">
         <div class="page-header">
             <h1 class="page-title">PRODUCTS MANAGEMENT</h1>
-            <button class="btn btn-add">
+            <button class="btn btn-add" data-bs-toggle="modal" data-bs-target="#addProductModal">
                 <i class="fas fa-plus me-2"></i>Add Product
             </button>
         </div>
@@ -305,7 +292,7 @@ $categories = ['Fixed Gear', 'Frames', 'Components', 'Accessories'];
                 <div class="stat-label">Active Products</div>
             </div>
             <div class="stat-card">
-                <div class="stat-number"><?php echo count(array_filter($products, function($p) { return $p['stock'] > 0; })); ?></div>
+                <div class="stat-number"><?php echo count(array_filter($products, function($p) { return $p['stock_quantity'] > 0; })); ?></div>
                 <div class="stat-label">In Stock</div>
             </div>
             <div class="stat-card">
@@ -332,33 +319,196 @@ $categories = ['Fixed Gear', 'Frames', 'Components', 'Accessories'];
             <input type="text" class="search-box" placeholder="Search products..." id="searchProducts">
         </div>
 
-        <!-- Products Grid -->
-        <div class="products-grid">
-            <?php foreach ($products as $product): ?>
-            <div class="product-card" data-category="<?php echo htmlspecialchars($product['category']); ?>" data-status="<?php echo htmlspecialchars($product['status']); ?>">
-                <img src="<?php echo htmlspecialchars($product['image']); ?>" alt="<?php echo htmlspecialchars($product['name']); ?>" class="product-image">
-                <div class="product-info">
-                    <div class="product-name"><?php echo htmlspecialchars($product['name']); ?></div>
-                    <div class="product-category"><?php echo htmlspecialchars($product['category']); ?></div>
-                    <div class="product-price">$<?php echo number_format($product['price'], 2); ?></div>
-                    <div class="product-stock">
-                        <span>Stock: <?php echo $product['stock']; ?></span>
-                        <span class="stock-status status-<?php echo $product['status']; ?>">
-                            <?php echo ucfirst(str_replace('_', ' ', $product['status'])); ?>
-                        </span>
-                    </div>
-                    <div class="product-actions">
-                        <button class="btn btn-action btn-edit" title="Edit Product">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="btn btn-action btn-delete" title="Delete Product">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                </div>
-            </div>
-            <?php endforeach; ?>
+        <!-- Products Table -->
+        <div class="table-responsive">
+          <table class="table table-dark table-striped align-middle">
+            <thead>
+              <tr>
+                <th scope="col">Image</th>
+                <th scope="col">Name</th>
+                <th scope="col">Category</th>
+                <th scope="col">Price</th>
+                <th scope="col">Stock</th>
+                <th scope="col">Status</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php foreach ($products as $product): ?>
+              <tr data-category="<?php echo htmlspecialchars($product['category']); ?>" data-status="<?php echo htmlspecialchars($product['status']); ?>">
+                <td style="width: 80px;"><img src="<?php echo 'includes/product_image.php?id=' . $product['productID']; ?>" alt="<?php echo htmlspecialchars($product['product_name']); ?>" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px;"></td>
+                <td class="fw-bold"><?php echo htmlspecialchars($product['product_name']); ?></td>
+                <td><?php echo htmlspecialchars($product['category']); ?></td>
+                <td>$<?php echo number_format($product['price'], 2); ?></td>
+                <td><?php echo $product['stock_quantity']; ?></td>
+                <td><span class="stock-status status-<?php echo $product['status']; ?>">
+                  <?php echo ucfirst(str_replace('_', ' ', $product['status'])); ?>
+                </span></td>
+                <td>
+                  <button class="btn btn-action btn-edit btn-sm me-1" title="Edit Product"
+                    data-bs-toggle="modal" data-bs-target="#editProductModal"
+                    data-id="<?php echo $product['productID']; ?>"
+                    data-name="<?php echo htmlspecialchars($product['product_name']); ?>"
+                    data-categoryid="<?php echo $product['categoryID']; ?>"
+                    data-price="<?php echo $product['price']; ?>"
+                    data-stock="<?php echo $product['stock_quantity']; ?>"
+                    data-status="<?php echo $product['status']; ?>">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button class="btn btn-action btn-delete btn-sm" title="Delete Product"
+                    data-bs-toggle="modal" data-bs-target="#deleteProductModal"
+                    data-id="<?php echo $product['productID']; ?>"
+                    data-name="<?php echo htmlspecialchars($product['product_name']); ?>">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </td>
+              </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
         </div>
+    </div>
+
+    <!-- Add Product Modal -->
+    <div class="modal fade" id="addProductModal" tabindex="-1" aria-labelledby="addProductModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+          <form action="includes/process_products.php" method="POST" enctype="multipart/form-data">
+            <div class="modal-header">
+              <h5 class="modal-title" id="addProductModalLabel">Add Product</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="product_name" class="form-label">Product Name</label>
+                <input type="text" class="form-control" id="product_name" name="product_name" required>
+              </div>
+              <div class="mb-3">
+                <label for="categoryID" class="form-label">Category</label>
+                <select class="form-select" id="categoryID" name="categoryID" required>
+                  <option value="">Select Category</option>
+                  <?php
+                  // Fetch categories from DB for the dropdown
+                  try {
+                    $catStmt = $conn->prepare("SELECT categoryID, name FROM categories WHERE status = 'active'");
+                    $catStmt->execute();
+                    $catList = $catStmt->fetchAll(PDO::FETCH_ASSOC);
+                    foreach ($catList as $cat) {
+                      echo '<option value="' . $cat['categoryID'] . '">' . htmlspecialchars($cat['name']) . '</option>';
+                    }
+                  } catch (PDOException $e) {}
+                  ?>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="price" class="form-label">Price</label>
+                <input type="number" step="0.01" class="form-control" id="price" name="price" required>
+              </div>
+              <div class="mb-3">
+                <label for="stock_quantity" class="form-label">Stock Quantity</label>
+                <input type="number" class="form-control" id="stock_quantity" name="stock_quantity" required>
+              </div>
+              <div class="mb-3">
+                <label for="status" class="form-label">Status</label>
+                <select class="form-select" id="status" name="status" required>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="image" class="form-label">Product Image</label>
+                <input type="file" class="form-control" id="image" name="image" accept="image/*">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary" name="action" value="add">Add Product</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div class="modal fade" id="editProductModal" tabindex="-1" aria-labelledby="editProductModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+          <form action="includes/process_products.php" method="POST" enctype="multipart/form-data">
+            <input type="hidden" name="productID" id="edit_productID">
+            <div class="modal-header">
+              <h5 class="modal-title" id="editProductModalLabel">Edit Product</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="edit_product_name" class="form-label">Product Name</label>
+                <input type="text" class="form-control" id="edit_product_name" name="product_name" required>
+              </div>
+              <div class="mb-3">
+                <label for="edit_categoryID" class="form-label">Category</label>
+                <select class="form-select" id="edit_categoryID" name="categoryID" required>
+                  <option value="">Select Category</option>
+                  <?php
+                  try {
+                    $catStmt = $conn->prepare("SELECT categoryID, name FROM categories WHERE status = 'active'");
+                    $catStmt->execute();
+                    $catList = $catStmt->fetchAll(PDO::FETCH_ASSOC);
+                    foreach ($catList as $cat) {
+                      echo '<option value="' . $cat['categoryID'] . '">' . htmlspecialchars($cat['name']) . '</option>';
+                    }
+                  } catch (PDOException $e) {}
+                  ?>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="edit_price" class="form-label">Price</label>
+                <input type="number" step="0.01" class="form-control" id="edit_price" name="price" required>
+              </div>
+              <div class="mb-3">
+                <label for="edit_stock_quantity" class="form-label">Stock Quantity</label>
+                <input type="number" class="form-control" id="edit_stock_quantity" name="stock_quantity" required>
+              </div>
+              <div class="mb-3">
+                <label for="edit_status" class="form-label">Status</label>
+                <select class="form-select" id="edit_status" name="status" required>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="edit_image" class="form-label">Product Image (leave blank to keep current)</label>
+                <input type="file" class="form-control" id="edit_image" name="image" accept="image/*">
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-primary" name="action" value="edit">Save Changes</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Product Modal -->
+    <div class="modal fade" id="deleteProductModal" tabindex="-1" aria-labelledby="deleteProductModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content bg-dark text-light">
+          <form action="includes/process_products.php" method="POST">
+            <input type="hidden" name="productID" id="delete_productID">
+            <div class="modal-header">
+              <h5 class="modal-title" id="deleteProductModalLabel">Delete Product</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <p>Are you sure you want to delete <span id="delete_product_name" class="fw-bold"></span>?</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+              <button type="submit" class="btn btn-danger" name="action" value="delete">Delete</button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
 
     <!-- Bootstrap JS -->
@@ -389,6 +539,114 @@ $categories = ['Fixed Gear', 'Frames', 'Components', 'Accessories'];
         document.getElementById('searchProducts').addEventListener('input', filterProducts);
         document.getElementById('categoryFilter').addEventListener('change', filterProducts);
         document.getElementById('statusFilter').addEventListener('change', filterProducts);
+
+        // Edit Product Modal: fill fields with product data
+        const editProductModal = document.getElementById('editProductModal');
+        if (editProductModal) {
+          editProductModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            document.getElementById('edit_productID').value = button.getAttribute('data-id');
+            document.getElementById('edit_product_name').value = button.getAttribute('data-name');
+            document.getElementById('edit_categoryID').value = button.getAttribute('data-categoryid');
+            document.getElementById('edit_price').value = button.getAttribute('data-price');
+            document.getElementById('edit_stock_quantity').value = button.getAttribute('data-stock');
+            document.getElementById('edit_status').value = button.getAttribute('data-status');
+          });
+        }
+        // Delete Product Modal: fill fields with product data
+        const deleteProductModal = document.getElementById('deleteProductModal');
+        if (deleteProductModal) {
+          deleteProductModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            document.getElementById('delete_productID').value = button.getAttribute('data-id');
+            document.getElementById('delete_product_name').textContent = button.getAttribute('data-name');
+          });
+        }
+
+        // AJAX for Add Product
+        const addProductForm = document.querySelector('#addProductModal form');
+        if (addProductForm) {
+          addProductForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            formData.append('action', 'add');
+            fetch('includes/process_products.php', {
+              method: 'POST',
+              body: formData,
+              headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('addProductModal'));
+                if (modal) modal.hide();
+                setTimeout(() => {
+                  showSuccess(data.message);
+                  setTimeout(() => location.reload(), 1500);
+                }, 400);
+              } else {
+                showError(data.message);
+              }
+            })
+            .catch(() => showError('An error occurred while adding the product.'));
+          });
+        }
+        // AJAX for Edit Product
+        const editProductForm = document.querySelector('#editProductModal form');
+        if (editProductForm) {
+          editProductForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            formData.append('action', 'edit');
+            fetch('includes/process_products.php', {
+              method: 'POST',
+              body: formData,
+              headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('editProductModal'));
+                if (modal) modal.hide();
+                setTimeout(() => {
+                  showSuccess(data.message);
+                  setTimeout(() => location.reload(), 1500);
+                }, 400);
+              } else {
+                showError(data.message);
+              }
+            })
+            .catch(() => showError('An error occurred while updating the product.'));
+          });
+        }
+        // AJAX for Delete Product
+        const deleteProductForm = document.querySelector('#deleteProductModal form');
+        if (deleteProductForm) {
+          deleteProductForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            formData.append('action', 'delete');
+            fetch('includes/process_products.php', {
+              method: 'POST',
+              body: formData,
+              headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(res => res.json())
+            .then(data => {
+              if (data.success) {
+                const modal = bootstrap.Modal.getInstance(document.getElementById('deleteProductModal'));
+                if (modal) modal.hide();
+                setTimeout(() => {
+                  showSuccess(data.message);
+                  setTimeout(() => location.reload(), 1500);
+                }, 400);
+              } else {
+                showError(data.message);
+              }
+            })
+            .catch(() => showError('An error occurred while deleting the product.'));
+          });
+        }
     </script>
 </body>
 </html> 
