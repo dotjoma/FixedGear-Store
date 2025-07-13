@@ -46,9 +46,9 @@ $logoutLink = $inPages ? '../includes/process_auth.php' : ($inAdmin ? '../includ
       <?php else: ?>
         <!-- If logged in, show dropdown -->
         <div class="dropdown me-4">
-          <a href="#" class="text-white dropdown-toggle" style="font-size:1.3rem;" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+          <button class="btn btn-link text-white dropdown-toggle p-0" style="font-size:1.3rem; text-decoration:none;" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
             <i class="fas fa-user"></i>
-          </a>
+          </button>
           <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
             <?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
               <li><a class="dropdown-item" href="<?= $adminLink ?>"><i class="fas fa-tachometer-alt me-2"></i>Admin Dashboard</a></li>

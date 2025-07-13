@@ -111,6 +111,8 @@ $filteredProducts = $selectedCategory ? array_filter($products, function($p) use
         </div>
     </div>
     <?php include('../components/footer.php'); ?>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/scripts.js"></script>
     <script>
     // Sorting functionality
     document.getElementById('sortProducts').addEventListener('change', function() {
@@ -120,8 +122,8 @@ $filteredProducts = $selectedCategory ? array_filter($products, function($p) use
         cards.sort((a, b) => {
             const nameA = a.querySelector('.product-name').textContent.trim().toLowerCase();
             const nameB = b.querySelector('.product-name').textContent.trim().toLowerCase();
-            const priceA = parseFloat(a.querySelector('.product-price').textContent.replace('$',''));
-            const priceB = parseFloat(b.querySelector('.product-price').textContent.replace('$',''));
+            const priceA = parseFloat(a.querySelector('.product-price').textContent.replace('₱','').replace(',',''));
+            const priceB = parseFloat(b.querySelector('.product-price').textContent.replace('₱','').replace(',',''));
             if (value === 'price_asc') return priceA - priceB;
             if (value === 'price_desc') return priceB - priceA;
             if (value === 'name_asc') return nameA.localeCompare(nameB);
