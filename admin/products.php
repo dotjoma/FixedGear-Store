@@ -21,7 +21,14 @@ try {
     $products = [];
 }
 
-$categories = ['Fixed Gear', 'Frames', 'Components', 'Accessories'];
+// Fetch categories from database for filter dropdown
+try {
+    $catFilterStmt = $conn->prepare("SELECT DISTINCT name FROM categories WHERE status = 'active' ORDER BY name");
+    $catFilterStmt->execute();
+    $categories = $catFilterStmt->fetchAll(PDO::FETCH_COLUMN);
+} catch (PDOException $e) {
+    $categories = [];
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -115,6 +122,18 @@ $categories = ['Fixed Gear', 'Frames', 'Components', 'Accessories'];
             border-color: #e6ff00;
             box-shadow: 0 0 0 2px #e6ff0033;
             outline: none;
+        }
+        
+        .btn-outline-secondary {
+            border-color: #333;
+            color: #fff;
+            background: transparent;
+        }
+        
+        .btn-outline-secondary:hover {
+            background: #333;
+            border-color: #e6ff00;
+            color: #e6ff00;
         }
         
         .products-grid {
@@ -313,10 +332,13 @@ $categories = ['Fixed Gear', 'Frames', 'Components', 'Accessories'];
             <select class="filter-select" id="statusFilter">
                 <option value="">All Status</option>
                 <option value="active">Active</option>
-                <option value="out_of_stock">Out of Stock</option>
+                <option value="inactive">Inactive</option>
             </select>
             
             <input type="text" class="search-box" placeholder="Search products..." id="searchProducts">
+            <button type="button" class="btn btn-outline-secondary" id="clearFilters">
+                <i class="fas fa-times me-1"></i>Clear Filters
+            </button>
         </div>
 
         <!-- Products Table -->
@@ -366,6 +388,11 @@ $categories = ['Fixed Gear', 'Frames', 'Components', 'Accessories'];
               <?php endforeach; ?>
             </tbody>
           </table>
+          <div id="noResults" class="text-center py-4" style="display: none;">
+            <i class="fas fa-search fa-2x text-muted mb-3"></i>
+            <h5 class="text-muted">No products found</h5>
+            <p class="text-muted">Try adjusting your search criteria or filters.</p>
+          </div>
         </div>
     </div>
 
@@ -522,24 +549,43 @@ $categories = ['Fixed Gear', 'Frames', 'Components', 'Accessories'];
             const categoryFilter = document.getElementById('categoryFilter').value;
             const statusFilter = document.getElementById('statusFilter').value;
             
-            const products = document.querySelectorAll('.product-card');
+            const tableRows = document.querySelectorAll('tbody tr');
+            const noResultsDiv = document.getElementById('noResults');
+            let visibleCount = 0;
             
-            products.forEach(product => {
-                const name = product.querySelector('.product-name').textContent.toLowerCase();
-                const category = product.dataset.category;
-                const status = product.dataset.status;
+            tableRows.forEach(row => {
+                const name = row.querySelector('td:nth-child(2)').textContent.toLowerCase();
+                const category = row.dataset.category;
+                const status = row.dataset.status;
                 
                 const matchesSearch = name.includes(searchTerm);
                 const matchesCategory = !categoryFilter || category === categoryFilter;
                 const matchesStatus = !statusFilter || status === statusFilter;
                 
-                product.style.display = (matchesSearch && matchesCategory && matchesStatus) ? '' : 'none';
+                const isVisible = (matchesSearch && matchesCategory && matchesStatus);
+                row.style.display = isVisible ? '' : 'none';
+                if (isVisible) visibleCount++;
             });
+            
+            // Show/hide no results message
+            if (visibleCount === 0) {
+                noResultsDiv.style.display = 'block';
+            } else {
+                noResultsDiv.style.display = 'none';
+            }
         }
         
         document.getElementById('searchProducts').addEventListener('input', filterProducts);
         document.getElementById('categoryFilter').addEventListener('change', filterProducts);
         document.getElementById('statusFilter').addEventListener('change', filterProducts);
+        
+        // Clear filters functionality
+        document.getElementById('clearFilters').addEventListener('click', function() {
+            document.getElementById('searchProducts').value = '';
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('statusFilter').value = '';
+            filterProducts();
+        });
 
         // Edit Product Modal: fill fields with product data
         const editProductModal = document.getElementById('editProductModal');
