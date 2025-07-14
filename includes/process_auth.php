@@ -67,7 +67,7 @@ if ($action === 'login') {
     session_destroy();
     
     // Always redirect to the project root index.php using absolute path
-    $projectRoot = '/finalprojectmayao/';
+    $projectRoot = '/FixedGear-Store/';
     header('Location: ' . $projectRoot . 'index.php');
     exit;
 }
